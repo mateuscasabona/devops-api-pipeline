@@ -1,0 +1,26 @@
+# Nada aqui é necessário para RODAR a aplicação.
+# Quanto menos entra no contexto de build, mais rápido o build e menor a imagem.
+
+# Git e CI
+.git
+.github
+.gitignore
+
+# Ambientes e caches do Python
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# Testes e ferramentas: rodam no CI, não em produção
+tests
+requirements-dev.txt
+pyproject.toml
+Makefile
+
+# Documentação e o próprio Dockerfile
+README.md
+Dockerfile
+.dockerignore

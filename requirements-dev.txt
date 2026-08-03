@@ -1,0 +1,6 @@
+# Ferramentas que só a ESTEIRA usa. Nada daqui entra na imagem final —
+# testar e escanear é trabalho do CI, não do container em produção.
+pytest==8.3.4
+httpx==0.28.1      # o TestClient do FastAPI é construído em cima do httpx
+ruff==0.8.4        # lint e formatação (estágio Qualidade)
+bandit==1.8.0      # SAST: procura padrões inseguros no código (estágio Segurança)

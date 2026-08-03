@@ -1,0 +1,3 @@
+# Esta pasta existe de proposito e continua vazia no projeto 1.
+# E aqui que o projeto 2 (devops-api-pipeline) adiciona o arquivo ci.yml
+# com os cinco estagios da pipeline: quality, test, security, build e deploy.

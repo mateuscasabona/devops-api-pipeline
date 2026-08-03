@@ -1,0 +1,10 @@
+# Configuração do ruff — a única ferramenta configurada neste projeto.
+# Não há build-system nem Poetry: o pacote nunca é publicado, só executado.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W = estilo (PEP 8), F = erros reais do Pyflakes, I = ordem dos imports.
+select = ["E", "F", "I", "W"]

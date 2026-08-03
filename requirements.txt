@@ -1,0 +1,5 @@
+# Dependências que a aplicação precisa para RODAR.
+# Só o que entra na imagem Docker. Versões fixas: build reprodutível é requisito,
+# não preferência — a mesma imagem hoje e daqui a seis meses.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0

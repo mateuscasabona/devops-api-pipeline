@@ -1,0 +1,23 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Artefatos e caches do Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Relatórios gerados pelas ferramentas da pipeline
+bandit-report.json
+
+# Configuração local e segredos
+.env
+
+# Editores e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
