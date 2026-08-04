@@ -1,0 +1,145 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Menor privilégio por padrão: o workflow só lê o repositório.
+# Cada job eleva a permissão que precisa, e apenas ela.
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Qualidade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Versão fixada para bater com requirements-dev.txt: a mesma regra
+      # aplicada aqui e na máquina do desenvolvedor.
+      - name: Instala o ruff
+        run: pip install ruff==0.8.4
+
+      - name: Verifica as regras de lint
+        run: ruff check .
+
+      - name: Verifica a formatação
+        run: ruff format --check .
+
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instala as dependências
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Roda os testes
+        run: pytest -v
+
+  security:
+    name: Segurança
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instala o bandit
+        run: pip install "bandit[sarif]==1.8.0"
+
+      # continue-on-error é deliberado: o bandit encerra com código 1 quando
+      # encontra qualquer achado. Sem isso o job morreria aqui e o passo
+      # seguinte nunca publicaria o relatório na aba Security.
+      - name: Roda a análise estática de segurança
+        continue-on-error: true
+        run: bandit -r app/ -f sarif -o bandit.sarif
+
+      - name: Publica o relatório na aba Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+
+  build:
+    name: Build
+    needs: [quality, test, security]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # O GHCR só aceita nomes de imagem em minúsculas, mas github.repository
+      # preserva as maiúsculas do nome da conta. Esta conversão evita o erro
+      # "invalid reference format" no push.
+      - name: Converte o nome do repositório para minúsculas
+        id: imagem
+        run: echo "nome=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Constrói e publica a imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.imagem.outputs.nome }}:latest
+            ${{ steps.imagem.outputs.nome }}:${{ github.sha }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispara o deploy no Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::error::O secret RENDER_DEPLOY_HOOK não está configurado neste repositório."
+            echo ""
+            echo "Como configurar:"
+            echo "  1. No painel do Render, abra o web service e vá em Settings > Deploy Hook."
+            echo "  2. Copie a URL do hook."
+            echo "  3. No GitHub, vá em Settings > Secrets and variables > Actions."
+            echo "  4. Clique em New repository secret."
+            echo "  5. Use exatamente o nome RENDER_DEPLOY_HOOK e cole a URL como valor."
+            echo ""
+            echo "Depois disso, rode este workflow novamente em Actions > Re-run jobs."
+            exit 1
+          fi
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK"
+          echo "Deploy solicitado ao Render. Acompanhe o progresso no painel do serviço."
