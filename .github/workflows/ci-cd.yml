@@ -133,7 +133,7 @@ jobs:
             echo ""
             echo "Como configurar:"
             echo "  1. No painel do Render, abra o web service e vá em Settings > Deploy Hook."
-            echo "  2. Copie a URL do hook."
+            echo "  2. Copie a URL do hook"
             echo "  3. No GitHub, vá em Settings > Secrets and variables > Actions."
             echo "  4. Clique em New repository secret."
             echo "  5. Use exatamente o nome RENDER_DEPLOY_HOOK e cole a URL como valor."
